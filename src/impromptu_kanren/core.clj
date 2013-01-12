@@ -46,7 +46,7 @@
   [lvar subst]
   (cond
    (not (lvar? lvar)) lvar
-   (contains? subst lvar) (recur (get subst lvar) (dissoc subst lvar))
+   (contains? subst lvar) (recur (get subst lvar) subst)
    :else lvar))
 
 (defn unify
@@ -70,9 +70,50 @@
        unified (succeed unified)
        :else (fail subst)))))
 
+(defn lookup*
+  [lvar subst]
+  (let [val (lookup lvar subst)]
+    (cond
+     (lvar? val) val
+     (and (seq? val) (empty? val)) val
+     (seq? val) (list* (lookup* (first val) subst)
+                       (lookup* (rest val) subst))
+     :else val)))
+
 (defn run
-  [goal]
-  (goal empty-subst))
+  ([goal]
+     (goal empty-subst))
+  ([qlvar goal]
+     (map (fn [subst] (lookup* qlvar subst)) (goal empty-subst))))
+
+(defn conj*
+  [& goals]
+  (reduce conj goals))
+
+(defn disj*
+  [& goals]
+  (reduce disj goals))
+
+(defmacro defrel
+  [name & pairs]
+  `(defn ~name
+     [q#]
+     (condp = q#
+       ~@pairs)))
+
+(defn relato
+  [rel a b]
+  (== (rel a) b))
+
+(defmacro deffact
+  [name & indivs]
+  `(defn ~name
+     [q#]
+     (contains? #{~@indivs} q#)))
+
+(defn facto
+  [fact ind]
+  (== (fact ind) true))
 
 (defn membero
   [el seq]
@@ -91,3 +132,45 @@
 (defn conso
   [a b l]
   (== (cons a b) l))
+
+(comment
+
+(def vx (lvar 'x))
+(def vy (lvar 'y))
+(def vq (lvar 'q))
+
+(run vq
+     (conj* (== vq (list vx vy))
+            (conso vx (list 2 3) (list 1 2 3))
+            (conso vy (list 5 6) (list 4 5 6))))
+  
+(run (common-el (list 1 2 3) (list 4 3 2)))
+
+
+;; this should return '({[y] (1 2)}) , but it doesn't:
+(run (conso 1 vx (list 1 2 3)))
+;=> ()
+
+
+(deffact myparent :father :mother)
+(run (facto myparent :father))
+;=> ({})
+
+;; this should return '({[x] :father} {[x] :mother}) - how to achieve that?
+(run (facto myparent vx))
+;=> ()
+
+
+(defrel parent :mike :andy :josh :ted)
+(run (relato parent :mike :andy))
+;=> ({})
+
+(run (relato parent :mike vx))
+;=> ({[x] :andy})
+
+;; this should return '({[x] :mike}) - how to achieve that?
+(run (relato parent vx :andy))
+;IllegalArgumentException No matching clause: [x]  impromptu-kanren.core/parent
+
+
+)
