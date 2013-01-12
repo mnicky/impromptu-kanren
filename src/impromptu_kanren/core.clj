@@ -115,6 +115,10 @@
   [fact ind]
   (== (fact ind) true))
 
+
+
+;; example goals
+
 (defn membero
   [el seq]
   (if (empty? seq)
@@ -133,6 +137,9 @@
   [a b l]
   (== (cons a b) l))
 
+
+
+
 (comment
 
 (def vx (lvar 'x))
@@ -143,11 +150,12 @@
      (conj* (== vq (list vx vy))
             (conso vx (list 2 3) (list 1 2 3))
             (conso vy (list 5 6) (list 4 5 6))))
-  
+;=> ((1 4))
+
 (run (common-el (list 1 2 3) (list 4 3 2)))
+;=> ({[x] 2} {[x] 3})
 
-
-;; this should return '({[y] (1 2)}) , but it doesn't:
+;; this should return ({[y] (1 2)}) , but it doesn't:
 (run (conso 1 vx (list 1 2 3)))
 ;=> ()
 
@@ -156,7 +164,7 @@
 (run (facto myparent :father))
 ;=> ({})
 
-;; this should return '({[x] :father} {[x] :mother}) - how to achieve that?
+;; this should return ({[x] :father} {[x] :mother}) - how to achieve that?
 (run (facto myparent vx))
 ;=> ()
 
