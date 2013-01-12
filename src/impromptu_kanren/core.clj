@@ -94,6 +94,9 @@
   [& goals]
   (reduce disj goals))
 
+;; doesn't work when individual is related to more than one
+;; individuals with the same relation (because of cond :)
+;; implement it with disj* or something similar?
 (defmacro defrel
   [name & pairs]
   `(defn ~name
