@@ -54,21 +54,21 @@
   (let [t1 (lookup t1 subst)
         t2 (lookup t2 subst)]
     (cond
-     (= t1 t2) subst
+     (identical? t1 t2) subst
      (lvar? t1) (ext-s t1 t2 subst)
      (lvar? t2) (ext-s t2 t1 subst)
      (every? seq? [t1 t2])
-       (let [subst (unify (first t1) (first t2) subst)]
-         (and subst (unify (rest t1) (rest t2) subst)))
-     :else false)))
+       (when-let [subst (unify (first t1) (first t2) subst)]
+         (recur (rest t1) (rest t2) subst))
+     (= t1 t2) subst
+     :else nil)))
 
 (defn ==
   [t1 t2]
   (fn [subst]
-    (let [unified (unify t1 t2 subst)]
-      (cond
-       unified (succeed unified)
-       :else (fail subst)))))
+    (if-let [unified (unify t1 t2 subst)]
+      (succeed unified)
+      (fail subst))))
 
 (defn lookup*
   [lvar subst]
