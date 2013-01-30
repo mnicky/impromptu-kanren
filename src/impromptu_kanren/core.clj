@@ -28,13 +28,35 @@
 
 )
 
+(definterface IVar)
+
+(deftype LVar [val]
+  IVar
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :val val
+      not-found))
+  Object
+  (toString [_] (str "<lvar:" val ">"))
+  (equals [this o]
+    (and (instance? impromptu_kanren.core.IVar o)
+         (identical? name (:name o))))
+  (hashCode [_] (hash val)))
+
+(defmethod print-method LVar
+  [obj ^java.io.Writer w]
+  (.write w (str obj)))
+
 (defn lvar
   [x]
-  [x])
+  (LVar. x))
 
 (defn lvar?
   [x]
-  (vector? x))
+  (instance? LVar x))
 
 (def empty-subst {})
 
@@ -58,17 +80,20 @@
      (lvar? t1) (ext-s t1 t2 subst)
      (lvar? t2) (ext-s t2 t1 subst)
      (every? seq? [t1 t2])
-       (when-let [subst (unify (first t1) (first t2) subst)]
-         (recur (rest t1) (rest t2) subst))
+       (let [subst (unify (first t1) (first t2) subst)]
+         (if (not= subst 'f#)
+           (recur (rest t1) (rest t2) subst)
+           'f#))
      (= t1 t2) subst
-     :else nil)))
+     :else 'f#)))
 
 (defn ==
   [t1 t2]
   (fn [subst]
-    (if-let [unified (unify t1 t2 subst)]
-      (succeed unified)
-      (fail subst))))
+    (let [unified (unify t1 t2 subst)]
+      (if-not (= unified 'f#)
+        (succeed unified)
+        (fail unified)))))
 
 (defn lookup*
   [lvar subst]
